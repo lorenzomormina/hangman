@@ -18,9 +18,9 @@ struct Vec2i
 
 struct Random
 {
-    std::random_device rd;
-    std::default_random_engine gen;
-    std::uniform_int_distribution<size_t> distrib;
+    random_device rd;
+    default_random_engine gen;
+    uniform_int_distribution<size_t> distrib;
 
     Random();
     void setSize(size_t size);
@@ -36,9 +36,8 @@ struct Text
     void updateTexture();
     void setValue(const string& str);
     void assignValue(int count, char c);
-
-    SDL_Rect getRect(int y);
-    SDL_Rect getRect(int x, int y);
+    void appendValue(const string& str);
+    void setAt(int pos, char c);
 
     void renderCenterH();
     void render();
@@ -201,14 +200,14 @@ void loadWordList()
 
 bool isAlpha(string& str)
 {
-    return std::all_of(str.begin(), str.end(), [](char& c) {
-            return std::isalpha(c);
+    return all_of(str.begin(), str.end(), [](char& c) {
+        return isalpha(c);
         });
 }
 
 void toUpper(string& str)
 {
-    std::for_each(str.begin(), str.end(), [](char& c)
+    for_each(str.begin(), str.end(), [](char& c)
         {
             c = toupper(c);
         });
@@ -298,7 +297,7 @@ void resetGame()
     label_currentLetter.setValue("Current Letter:");
     currentLetter.setValue("");
 
-    //cout << secretWord.value + "\n" << endl;
+    // cout << secretWord.value + "\n" << endl;
 }
 
 void prepareLetter(int scancode)
@@ -328,38 +327,38 @@ void confirmLetter()
 
     bool found = false;
     auto pos = -1;
-    while (true) {
+    while (true)
+    {
         pos = secretWord.value.find(letter, pos + 1);
-        if (pos == string::npos) {
-            if (!found) {
-                if (wrongLetters.value.find(letter) == string::npos) {
-                    wrongLetters.setValue(wrongLetters.value + letter + " ");
+        if (pos == string::npos)
+        {
+            if (!found)
+            {
+                if (wrongLetters.value.find(letter) == string::npos)
+                {
+                    wrongLetters.appendValue(letter + " ");
                     label_wrongLetters.setValue("Wrong Letters (" + to_string(wrongLetters.value.size() / 2) + "):");
                 }
             }
             break;
         }
-        else {
+        else
+        {
             found = true;
-            auto pubw = publicWord.value;
-            pubw[pos] = letter[0];
-            publicWord.setValue(pubw);
-
-            if (publicWord.value == secretWord.value) {
+            publicWord.setAt(pos, letter[0]);
+            if (publicWord.value == secretWord.value) 
+            {
                 gameOver = true;
-                if (wrongLetters.value.size() / 2 > 5) {
+                if (wrongLetters.value.size() / 2 > 5) 
                     label_currentLetter.setValue("You Lose!");
-                }
-                else if (wrongLetters.value.size() / 2 <= 5)
+                else
                     label_currentLetter.setValue("You Win!");
             }
         }
     }
 
-
     currentLetter.setValue("");
 }
-// [END CHECK]
 
 
 Random::Random()
@@ -369,7 +368,7 @@ Random::Random()
 
 void Random::setSize(size_t size)
 {
-    distrib.param(std::uniform_int_distribution<size_t>::param_type(0, size - 1));
+    distrib.param(uniform_int_distribution<size_t>::param_type(0, size - 1));
 }
 
 int Random::getNumber()
@@ -377,8 +376,6 @@ int Random::getNumber()
     return distrib(gen);
 }
 
-
-// [CHECK]
 void Text::updateTexture()
 {
     if (texture != nullptr) {
@@ -405,22 +402,16 @@ void Text::assignValue(int count, char c)
     updateTexture();
 }
 
-SDL_Rect Text::getRect(int y)
+void Text::appendValue(const string& str)
 {
-    SDL_Rect r;
-    SDL_QueryTexture(texture, nullptr, nullptr, &r.w, &r.h);
-    r.y = y;
-    r.x = (WINDOW_SIZE.x - r.w) / 2;
-    return r;
+    value.append(str);
+    updateTexture();
 }
 
-SDL_Rect Text::getRect(int x, int y)
+void Text::setAt(int pos, char c)
 {
-    SDL_Rect r;
-    SDL_QueryTexture(texture, nullptr, nullptr, &r.w, &r.h);
-    r.y = y;
-    r.x = x;
-    return r;
+    value[pos] = c; 
+    updateTexture();
 }
 
 void Text::renderCenterH()
@@ -445,9 +436,7 @@ void Text::render()
         SDL_RenderCopy(renderer, texture, nullptr, &r);
     }
 }
-// [END CHECK]
 
-// [CHECK]
 void Button::render()
 {
     SDL_Rect buttonRect = { position.x, position.y, size.x, size.y };
@@ -456,15 +445,12 @@ void Button::render()
 
     SDL_Rect textRect;
     TTF_SizeText(font24, text.value.c_str(), &textRect.w, &textRect.h);
-
-    // center the text
     textRect.x = position.x + (size.x - textRect.w) / 2;
     textRect.y = position.y + (size.y - textRect.h) / 2;
 
     SDL_RenderCopy(renderer, text.texture, nullptr, &textRect);
 
 }
-// [END CHECK]
 
 void draw()
 {
