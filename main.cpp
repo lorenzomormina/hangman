@@ -78,9 +78,12 @@ Text label_wrongLetters;
 Text label_currentLetter;
 
 Button btnReset;
-Button btnSuggest;
+Button btnReveal;
 
 SDL_Texture* human[6];
+
+bool didReveal = false;
+bool gameOver = false;
 
 SDL_Texture* loadTexture(const char* path)
 {
@@ -100,9 +103,9 @@ bool running = true;
 bool isAlpha(string& str);
 void toUpper(string& str);
 void loadWordList();
-void suggest();
 
 void resetGame();
+void reveal();
 
 void handleEvent(SDL_Event& ev);
 void draw();
@@ -131,6 +134,9 @@ void drawButton(Button& button)
 
 void prepareLetter(int scancode)
 {
+    if (gameOver)
+        return;
+
     char c = 'A' + (scancode - SDL_SCANCODE_A);
     string letter;
     letter.push_back(c);
@@ -169,6 +175,15 @@ void confirmLetter()
             auto pubw = publicWord.value;
             pubw[pos] = letter[0];
             publicWord.setValue(pubw);
+
+            if (publicWord.value == secretWord.value) {
+                gameOver = true;
+                if (wrongLetters.value.size() / 2 > 5) {
+                    label_currentLetter.setValue("You Lose!");
+                }
+                else if(wrongLetters.value.size() / 2 <= 5)
+                    label_currentLetter.setValue("You Win!");
+            }
         }
     }
 
@@ -199,8 +214,6 @@ int main(int argc, char* argv[])
 
     random.setSize(wordList.size());
 
-    label_wrongLetters.setValue("Wrong Letters (0):");
-    label_currentLetter.setValue("Current Letter:");
 
     for (int i = 0; i < 6; ++i) {
         string path = "assets/human_" + to_string(i) + ".png";
@@ -208,7 +221,7 @@ int main(int argc, char* argv[])
     }
 
     btnReset = {
-        { 20, 20 },
+        { 20, 70 },
         BUTTON_SIZE,
         { "" },
         BUTTON_COLOR,
@@ -217,15 +230,15 @@ int main(int argc, char* argv[])
 
     btnReset.text.setValue("Reset");
 
-    btnSuggest = {
-        { 20, 70 },
+    btnReveal = {
+        { 20, 20 },
         BUTTON_SIZE,
         { "" },
         BUTTON_COLOR,
         BLACK
     };
 
-    btnSuggest.text.setValue("Suggest");
+    btnReveal.text.setValue("Reveal");
 
 
     resetGame();
@@ -355,6 +368,9 @@ void loadWordList()
 
 void resetGame()
 {
+    gameOver = false;
+    didReveal = false;
+
     auto idx = random.getNumber();
     secretWord.setValue(wordList[idx]);
 
@@ -369,9 +385,10 @@ void resetGame()
 
     wrongLetters.setValue("");
     label_wrongLetters.setValue("Wrong Letters (0):");
+    label_currentLetter.setValue("Current Letter:");
     currentLetter.setValue("");
 
-    cout<< secretWord.value << endl;
+    //cout << secretWord.value + "\n" << endl;
 }
 
 // ---
@@ -400,10 +417,10 @@ void handleEvent(SDL_Event& ev)
             confirmLetter();
         }
         else if (scancode == SDL_SCANCODE_F2) {
-            resetGame();
+            reveal();
         }
         else if (scancode == SDL_SCANCODE_F3) {
-            suggest();
+            resetGame();
         }
         break;
     }
@@ -417,9 +434,9 @@ void handleEvent(SDL_Event& ev)
             y >= btnReset.position.y && y <= btnReset.position.y + btnReset.size.y) {
             resetGame();
         }
-        else if (x >= btnSuggest.position.x && x <= btnSuggest.position.x + btnSuggest.size.x &&
-            y >= btnSuggest.position.y && y <= btnSuggest.position.y + btnSuggest.size.y) {
-
+        else if (x >= btnReveal.position.x && x <= btnReveal.position.x + btnReveal.size.x &&
+            y >= btnReveal.position.y && y <= btnReveal.position.y + btnReveal.size.y) {
+            reveal();
         }
 
         break;
@@ -444,67 +461,27 @@ void draw()
     r.x = (windowSize.x - r.w) / 2;
     r.y = 300;
 
-    int humanIndex = wrongLetters.value.size() / 2 > 5 ? 5 : wrongLetters.value.size() / 2;
+    int humanIndex;
+    if (didReveal) {
+                humanIndex = 5;
+    }
+    else {
+        humanIndex = wrongLetters.value.size() / 2 > 5 ? 5 : wrongLetters.value.size() / 2;
+    }
 
     SDL_RenderCopy(renderer, human[humanIndex], nullptr, &r);
 
     drawButton(btnReset);
-    drawButton(btnSuggest);
+    drawButton(btnReveal);
 }
 
 
-std::unordered_map<char, std::vector<int>> get_char_indices(const std::string& str) {
-    std::unordered_map<char, std::vector<int>> char_indices;
-    for (size_t i = 0; i < str.size(); ++i) {
-        char_indices[str[i]].push_back(i);
-    }
-    return char_indices;
-}
-
-void suggest()
+void reveal()
 {
-    vector<string> matchingWords;
-
-    for (auto& word : wordList)
-    {
-        if (word.size() != secretWord.value.size())
-            continue;
-
-        for (auto& c : word)
-        {
-            if (wrongLetters.value.find(c) != string::npos)
-                goto end_it;
-        }
-
-        for (int i = 0; i < word.size(); ++i)
-        {
-            if (publicWord.value[i] != '_' && publicWord.value[i] != word[i])
-                goto end_it;
-        }
-
-        {
-            auto publicIndices = get_char_indices(publicWord.value);
-            auto wordIndices = get_char_indices(word);
-
-            for (auto& pair : publicIndices)
-            {
-                if(pair.first == '_')
-                    continue;
-                if (pair.second != wordIndices[pair.first])
-                    goto end_it;
-            }
-
-        }
-
-        matchingWords.push_back(word);
-
-    end_it:
-        continue;
-    }
-
-    for (auto& word : matchingWords)
-    {
-        cout << word << '\n';
-    }
-    cout << endl;
+    if(gameOver)
+        return;
+    publicWord.setValue(secretWord.value);
+    didReveal = true;
+    gameOver = true;
+    label_currentLetter.setValue("You Lose!");
 }
