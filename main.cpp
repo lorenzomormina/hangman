@@ -6,6 +6,7 @@
 
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_ttf.h>
+#include <SDL2/SDL_image.h>
 
 using namespace std;
 
@@ -48,6 +49,16 @@ Text wrongLetters;
 Text currentLetter;
 Text label_wrongLetters;
 Text label_currentLetter;
+
+SDL_Texture* human[6];
+
+SDL_Texture* loadTexture(const char* path)
+{
+    auto surface = IMG_Load(path);
+    auto texture = SDL_CreateTextureFromSurface(renderer, surface);
+    SDL_FreeSurface(surface);
+    return texture;
+}
 
 TTF_Font* font24;
 
@@ -93,7 +104,8 @@ void confirmLetter()
         if (pos == string::npos) {
             if (!found) {
                 if (wrongLetters.value.find(letter) == string::npos) {
-                    wrongLetters.setValue(wrongLetters.value + " " + letter);
+                    wrongLetters.setValue(wrongLetters.value + letter + " ");
+                    label_wrongLetters.setValue("Wrong Letters (" + to_string(wrongLetters.value.size() / 2) + "):");
                 }
             }
             break;
@@ -132,8 +144,13 @@ int main(int argc, char* argv[])
 
     random.setSize(wordList.size());
 
-    label_wrongLetters.setValue("Wrong Letters:");
+    label_wrongLetters.setValue("Wrong Letters (0):");
     label_currentLetter.setValue("Current Letter:");
+
+    for (int i = 0; i < 6; ++i) {
+        string path = "assets/human_" + to_string(i) + ".png";
+        human[i] = loadTexture(path.c_str());
+    }
 
     resetGame();
 
@@ -311,4 +328,13 @@ void draw()
     wrongLetters.render(150);
     label_currentLetter.render(200);
     currentLetter.render(250);
+
+    SDL_Rect r;
+    SDL_QueryTexture(human[0], nullptr, nullptr, &r.w, &r.h);
+    r.x = (windowSize.x - r.w) / 2;
+    r.y = 300;
+
+    int humanIndex = wrongLetters.value.size() / 2 > 5 ? 5 : wrongLetters.value.size() / 2;
+
+    SDL_RenderCopy(renderer, human[humanIndex], nullptr, &r);
 }
