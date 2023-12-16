@@ -478,5 +478,3 @@ void draw()
     btnReveal.render();
     btnReset.render();
 }
-
-
