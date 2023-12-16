@@ -3,6 +3,7 @@
 #include <string>
 #include <fstream>
 #include <random>
+#include <unordered_map>
 
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_ttf.h>
@@ -369,6 +370,8 @@ void resetGame()
     wrongLetters.setValue("");
     label_wrongLetters.setValue("Wrong Letters (0):");
     currentLetter.setValue("");
+
+    cout<< secretWord.value << endl;
 }
 
 // ---
@@ -450,6 +453,14 @@ void draw()
 }
 
 
+std::unordered_map<char, std::vector<int>> get_char_indices(const std::string& str) {
+    std::unordered_map<char, std::vector<int>> char_indices;
+    for (size_t i = 0; i < str.size(); ++i) {
+        char_indices[str[i]].push_back(i);
+    }
+    return char_indices;
+}
+
 void suggest()
 {
     vector<string> matchingWords;
@@ -459,26 +470,41 @@ void suggest()
         if (word.size() != secretWord.value.size())
             continue;
 
-        bool match = true;
-        for (int i = 0; i < word.size(); ++i)
+        for (auto& c : word)
         {
-            // assing to boolean if word[i] is in wrongLetters
-            bool inWrongLetters = wrongLetters.value.find(word[i]) != string::npos;
-
-            if (publicWord.value[i] != '_' && (publicWord.value[i] != word[i] || inWrongLetters))
-            {
-                match = false;
-                break;
-            }
+            if (wrongLetters.value.find(c) != string::npos)
+                goto end_it;
         }
 
-        if (match)
-            matchingWords.push_back(word);
+        for (int i = 0; i < word.size(); ++i)
+        {
+            if (publicWord.value[i] != '_' && publicWord.value[i] != word[i])
+                goto end_it;
+        }
+
+        {
+            auto publicIndices = get_char_indices(publicWord.value);
+            auto wordIndices = get_char_indices(word);
+
+            for (auto& pair : publicIndices)
+            {
+                if(pair.first == '_')
+                    continue;
+                if (pair.second != wordIndices[pair.first])
+                    goto end_it;
+            }
+
+        }
+
+        matchingWords.push_back(word);
+
+    end_it:
+        continue;
     }
 
     for (auto& word : matchingWords)
     {
-        cout << word << endl;
+        cout << word << '\n';
     }
     cout << endl;
 }
