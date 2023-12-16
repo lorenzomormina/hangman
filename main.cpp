@@ -26,7 +26,12 @@ struct Random
     int getNumber();
 };
 
-const SDL_Color BLACK{ 0,0,0,255 };
+const SDL_Color BLACK{ 0, 0, 0,255 };
+const SDL_Color WHITE{ 255, 255, 255,255 };
+//const SDL_Color WINDOW_COLOR{ 255,255,255,255 };
+const SDL_Color BUTTON_COLOR{ 198, 140, 83,255 };
+const Vec2i BUTTON_SIZE{ 140, 40 };
+
 
 struct Text
 {
@@ -85,6 +90,7 @@ SDL_Texture* loadTexture(const char* path)
 }
 
 TTF_Font* font24;
+TTF_Font* font14;
 
 Random random;
 
@@ -93,6 +99,7 @@ bool running = true;
 bool isAlpha(string& str);
 void toUpper(string& str);
 void loadWordList();
+void suggest();
 
 void resetGame();
 
@@ -106,7 +113,17 @@ void drawButton(Button& button)
     SDL_Rect buttonRect = { button.position.x, button.position.y, button.size.x, button.size.y };
     SDL_SetRenderDrawColor(renderer, button.backgroundColor.r, button.backgroundColor.g, button.backgroundColor.b, button.backgroundColor.a);
     SDL_RenderFillRect(renderer, &buttonRect);
-    button.text.render(button.position.x + 10, button.position.y + 10);
+
+    // get the size of the text
+    SDL_Rect textRect;
+    //SDL_QueryTexture(button.text.texture, nullptr, nullptr, &textRect.w, &textRect.h);
+    TTF_SizeText(font24, button.text.value.c_str(), &textRect.w, &textRect.h);
+
+    // center the text
+    textRect.x = button.position.x + (button.size.x - textRect.w) / 2;
+    textRect.y = button.position.y + (button.size.y - textRect.h) / 2;
+
+    SDL_RenderCopy(renderer, button.text.texture, nullptr, &textRect);
 
 }
 
@@ -175,6 +192,7 @@ int main(int argc, char* argv[])
     renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_PRESENTVSYNC);
 
     font24 = TTF_OpenFont("assets/RobotoMono-Regular.ttf", 24);
+    font14 = TTF_OpenFont("assets/RobotoMono-Regular.ttf", 14);
 
     loadWordList();
 
@@ -189,21 +207,21 @@ int main(int argc, char* argv[])
     }
 
     btnReset = {
-        { 50, 500 },
-        { 140, 50 },
+        { 20, 20 },
+        BUTTON_SIZE,
         { "" },
-        { 255, 255, 255, 255 },
-        { 0, 0, 0, 255 }
+        BUTTON_COLOR,
+        BLACK
     };
 
     btnReset.text.setValue("Reset");
 
     btnSuggest = {
-        { 650, 500 },
-        { 140, 50 },
+        { 20, 70 },
+        BUTTON_SIZE,
         { "" },
-        { 255, 255, 255, 255 },
-        { 0, 0, 0, 255 }
+        BUTTON_COLOR,
+        BLACK
     };
 
     btnSuggest.text.setValue("Suggest");
@@ -382,7 +400,7 @@ void handleEvent(SDL_Event& ev)
             resetGame();
         }
         else if (scancode == SDL_SCANCODE_F3) {
-
+            suggest();
         }
         break;
     }
@@ -429,4 +447,38 @@ void draw()
 
     drawButton(btnReset);
     drawButton(btnSuggest);
+}
+
+
+void suggest()
+{
+    vector<string> matchingWords;
+
+    for (auto& word : wordList)
+    {
+        if (word.size() != secretWord.value.size())
+            continue;
+
+        bool match = true;
+        for (int i = 0; i < word.size(); ++i)
+        {
+            // assing to boolean if word[i] is in wrongLetters
+            bool inWrongLetters = wrongLetters.value.find(word[i]) != string::npos;
+
+            if (publicWord.value[i] != '_' && (publicWord.value[i] != word[i] || inWrongLetters))
+            {
+                match = false;
+                break;
+            }
+        }
+
+        if (match)
+            matchingWords.push_back(word);
+    }
+
+    for (auto& word : matchingWords)
+    {
+        cout << word << endl;
+    }
+    cout << endl;
 }
