@@ -33,7 +33,9 @@ struct Text
     SDL_Texture* texture = nullptr;
     Vec2i position;
 
+    void updateTexture();
     void setValue(const string& str);
+    void assignValue(int count, char c);
 
     SDL_Rect getRect(int y);
     SDL_Rect getRect(int x, int y);
@@ -137,7 +139,6 @@ int main(int argc, char** argv)
     return 0;
 }
 
-// [CHECK]
 void buildAssets()
 {
     font24 = TTF_OpenFont("assets/RobotoMono-Regular.ttf", 24);
@@ -183,7 +184,6 @@ void buildAssets()
 
     btnReset.text.setValue("Reset");
 }
-// [END CHECK]
 
 void loadWordList()
 {
@@ -201,20 +201,17 @@ void loadWordList()
 
 bool isAlpha(string& str)
 {
-    for (auto c : str)
-    {
-        if (!isalpha(c))
-            return false;
-    }
-    return true;
+    return std::all_of(str.begin(), str.end(), [](char& c) {
+            return std::isalpha(c);
+        });
 }
 
 void toUpper(string& str)
 {
-    for (auto& c : str)
-    {
-        c = toupper(c);
-    }
+    std::for_each(str.begin(), str.end(), [](char& c)
+        {
+            c = toupper(c);
+        });
 }
 
 SDL_Texture* loadTexture(const char* path)
@@ -277,7 +274,6 @@ void processEvents()
     }
 }
 
-// [CHECK]
 void reveal()
 {
     if (gameOver)
@@ -295,15 +291,7 @@ void resetGame()
 
     auto idx = random.getNumber();
     secretWord.setValue(wordList[idx]);
-
-    string pubw;
-    pubw.reserve();
-    for (auto c : secretWord.value)
-    {
-        pubw.push_back('_');
-    }
-
-    publicWord.setValue(pubw);
+    publicWord.assignValue(secretWord.value.size(), '_');
 
     wrongLetters.setValue("");
     label_wrongLetters.setValue("Wrong Letters (0):");
@@ -391,10 +379,8 @@ int Random::getNumber()
 
 
 // [CHECK]
-void Text::setValue(const string& str)
+void Text::updateTexture()
 {
-    value = str;
-
     if (texture != nullptr) {
         SDL_DestroyTexture(texture);
         texture = nullptr;
@@ -405,6 +391,18 @@ void Text::setValue(const string& str)
         texture = SDL_CreateTextureFromSurface(renderer, surface);
         SDL_FreeSurface(surface);
     }
+}
+
+void Text::setValue(const string& str)
+{
+    value = str;
+    updateTexture();
+}
+
+void Text::assignValue(int count, char c)
+{
+    value.assign(count, c);
+    updateTexture();
 }
 
 SDL_Rect Text::getRect(int y)
@@ -478,8 +476,8 @@ void draw()
 
     SDL_Rect r;
     SDL_QueryTexture(human[0], nullptr, nullptr, &r.w, &r.h);
-    r.x = (WINDOW_SIZE.x - r.w) / 2;
-    r.y = 300;
+    r.x = humanPosition.x;
+    r.y = humanPosition.y;
 
     int humanIndex;
     if (didReveal) {
