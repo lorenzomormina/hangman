@@ -36,6 +36,27 @@ struct Text
     void setValue(const string& str);
     SDL_Rect getRect(int y);
     void render(int y);
+
+    void Text::render(int x, int y);
+
+
+    SDL_Rect Text::getRect(int x, int y)
+    {
+        SDL_Rect r;
+        SDL_QueryTexture(texture, nullptr, nullptr, &r.w, &r.h);
+        r.y = y;
+        r.x = x;
+        return r;
+    }
+};
+
+struct Button
+{
+    Vec2i position; // Position of the button
+    Vec2i size; // Size of the button
+    Text text; // Text on the button
+    SDL_Color backgroundColor; // Background color of the button
+    SDL_Color textColor; // Text color of the button
 };
 
 Vec2i windowSize{ 800,600 };
@@ -49,6 +70,9 @@ Text wrongLetters;
 Text currentLetter;
 Text label_wrongLetters;
 Text label_currentLetter;
+
+Button btnReset;
+Button btnSuggest;
 
 SDL_Texture* human[6];
 
@@ -74,6 +98,18 @@ void resetGame();
 
 void handleEvent(SDL_Event& ev);
 void draw();
+
+
+
+void drawButton(Button& button)
+{
+    SDL_Rect buttonRect = { button.position.x, button.position.y, button.size.x, button.size.y };
+    SDL_SetRenderDrawColor(renderer, button.backgroundColor.r, button.backgroundColor.g, button.backgroundColor.b, button.backgroundColor.a);
+    SDL_RenderFillRect(renderer, &buttonRect);
+    button.text.render(button.position.x + 10, button.position.y + 10);
+
+}
+
 
 void prepareLetter(int scancode)
 {
@@ -152,6 +188,27 @@ int main(int argc, char* argv[])
         human[i] = loadTexture(path.c_str());
     }
 
+    btnReset = {
+        { 50, 500 },
+        { 140, 50 },
+        { "" },
+        { 255, 255, 255, 255 },
+        { 0, 0, 0, 255 }
+    };
+
+    btnReset.text.setValue("Reset");
+
+    btnSuggest = {
+        { 650, 500 },
+        { 140, 50 },
+        { "" },
+        { 255, 255, 255, 255 },
+        { 0, 0, 0, 255 }
+    };
+
+    btnSuggest.text.setValue("Suggest");
+
+
     resetGame();
 
     // ---
@@ -205,6 +262,14 @@ SDL_Rect Text::getRect(int y)
     r.y = y;
     r.x = (windowSize.x - r.w) / 2;
     return r;
+}
+
+void Text::render(int x, int y)
+{
+    if (texture != nullptr) {
+        SDL_Rect r = getRect(x, y);
+        SDL_RenderCopy(renderer, texture, nullptr, &r);
+    }
 }
 
 void Text::render(int y)
@@ -282,6 +347,10 @@ void resetGame()
     }
 
     publicWord.setValue(pubw);
+
+    wrongLetters.setValue("");
+    label_wrongLetters.setValue("Wrong Letters (0):");
+    currentLetter.setValue("");
 }
 
 // ---
@@ -312,8 +381,28 @@ void handleEvent(SDL_Event& ev)
         else if (scancode == SDL_SCANCODE_F2) {
             resetGame();
         }
+        else if (scancode == SDL_SCANCODE_F3) {
+
+        }
+        break;
     }
-    break;
+
+    case SDL_MOUSEBUTTONDOWN:
+    {
+        auto x = ev.button.x;
+        auto y = ev.button.y;
+
+        if (x >= btnReset.position.x && x <= btnReset.position.x + btnReset.size.x &&
+            y >= btnReset.position.y && y <= btnReset.position.y + btnReset.size.y) {
+            resetGame();
+        }
+        else if (x >= btnSuggest.position.x && x <= btnSuggest.position.x + btnSuggest.size.x &&
+            y >= btnSuggest.position.y && y <= btnSuggest.position.y + btnSuggest.size.y) {
+
+        }
+
+        break;
+    }
 
     default:
         break;
@@ -337,4 +426,7 @@ void draw()
     int humanIndex = wrongLetters.value.size() / 2 > 5 ? 5 : wrongLetters.value.size() / 2;
 
     SDL_RenderCopy(renderer, human[humanIndex], nullptr, &r);
+
+    drawButton(btnReset);
+    drawButton(btnSuggest);
 }
