@@ -9,65 +9,12 @@
 #include <SDL2/SDL_ttf.h>
 #include <SDL2/SDL_image.h>
 
+#include "Vec2.h"
+#include "Random.h"
+#include "Renderable.h"
+#include "String.h"
+
 using namespace std;
-
-struct Vec2i
-{
-    int x, y;
-};
-
-struct Random
-{
-    random_device rd;
-    default_random_engine gen;
-    uniform_int_distribution<size_t> distrib;
-
-    Random();
-    void setSize(size_t size);
-    int getNumber();
-};
-
-struct Text
-{
-    string value;
-    SDL_Texture* texture = nullptr;
-    Vec2i position;
-
-    void updateTexture();
-    void setValue(const string& str);
-    void assignValue(int count, char c);
-    void appendValue(const string& str);
-    void setAt(int pos, char c);
-
-    void renderCenterH();
-    void render();
-};
-
-struct Button
-{
-    Vec2i position;
-    Vec2i size;
-    Text text;
-    SDL_Color backgroundColor;
-    SDL_Color textColor;
-
-    void render();
-};
-
-struct SpriteSheet
-{
-    Vec2i position;
-    Vec2i size;
-    Vec2i gridSize;
-    Vec2i scaledSize;
-    SDL_Texture* texture;
-    vector<Vec2i> frames;
-    int duration;
-    int currentFrame = 0;
-    void load(Vec2i gridSize);
-    void render();
-};
-
 
 const SDL_Color BLACK{ 0, 0, 0,255 };
 const SDL_Color WHITE{ 255, 255, 255,255 };
@@ -114,10 +61,7 @@ bool isGhost = false;
 void buildAssets();
 
 void loadWordList();
-bool isAlpha(string& str);
-void toUpper(string& str);
 
-SDL_Texture* loadTexture(const char* path);
 
 void processEvents();
 void prepareLetter(int scancode);
@@ -170,15 +114,41 @@ void buildAssets()
 
     random.setSize(wordList.size());
 
+    auto windowRect = SDL_Rect{ 0, 0, WINDOW_SIZE.x, WINDOW_SIZE.y };
+
+    publicWord.renderer = renderer;
     publicWord.position = { 0,50 };
+    publicWord.color = BLACK;
+    publicWord.parentRect = windowRect;
+    publicWord.font = font24;
+
+    label_wrongLetters.renderer = renderer;
     label_wrongLetters.position = { 0,100 };
+    label_wrongLetters.color = BLACK;
+    label_wrongLetters.parentRect = windowRect;
+    label_wrongLetters.font = font24;
+
+    wrongLetters.renderer = renderer;
     wrongLetters.position = { 0,150 };
-    label_currentLetter.position = { 0,200 };;
+    wrongLetters.color = BLACK;
+    wrongLetters.parentRect = windowRect;
+    wrongLetters.font = font24;
+
+    label_currentLetter.renderer = renderer;
+    label_currentLetter.position = { 0,200 };
+    label_currentLetter.color = BLACK;
+    label_currentLetter.parentRect = windowRect;
+    label_currentLetter.font = font24;
+
+    currentLetter.renderer = renderer;
     currentLetter.position = { 0,250 };
+    currentLetter.color = BLACK;
+    currentLetter.parentRect = windowRect;
+    currentLetter.font = font24;
 
     for (int i = 0; i < 6; ++i) {
         string path = "assets/human_" + to_string(i) + ".png";
-        human[i] = loadTexture(path.c_str());
+        human[i] = loadTexture(path.c_str(), renderer);
     }
 
     Vec2i humanSize;
@@ -188,7 +158,7 @@ void buildAssets()
 
     Vec2i humanCenter = { humanPosition.x + humanSize.x / 2,  humanPosition.y + humanSize.y / 2 };
 
-    ghost.load(GHOST_SIZE);
+    ghost.load("assets/ghost/ghost.png", GHOST_SIZE, renderer);
     ghost.scaledSize = { (int)(GHOST_SCALE * ghost.gridSize.x), (int)(GHOST_SCALE * ghost.gridSize.y) };
     ghost.frames = GHOST_FRAMES;
     ghost.duration = GHOST_FRAME_DURATION;
@@ -201,15 +171,16 @@ void buildAssets()
         return interval;
         }, &ghost);
 
-    btnReveal = {
-        { 20, 20 },
-        BUTTON_SIZE,
-        { "" },
-        BUTTON_COLOR,
-        BLACK
-    };
+    btnReveal.renderer = renderer;
+    btnReveal.position = { 20, 20 };
+    btnReveal.size = BUTTON_SIZE;
+    btnReveal.color = BUTTON_COLOR;
+    btnReveal.text.color = BLACK;
 
-    btnReveal.text.setValue("Reveal");
+    btnReveal.text.renderer = renderer;
+    btnReveal.text.color = BLACK;
+    btnReveal.text.parentRect = { 20,20,BUTTON_SIZE.x, BUTTON_SIZE.y };
+    btnReveal.text.font = font24;
 }
 
 void loadWordList()
@@ -226,28 +197,6 @@ void loadWordList()
     }
 }
 
-bool isAlpha(string& str)
-{
-    return all_of(str.begin(), str.end(), [](char& c) {
-        return isalpha(c);
-        });
-}
-
-void toUpper(string& str)
-{
-    for_each(str.begin(), str.end(), [](char& c)
-        {
-            c = toupper(c);
-        });
-}
-
-SDL_Texture* loadTexture(const char* path)
-{
-    auto surface = IMG_Load(path);
-    auto texture = SDL_CreateTextureFromSurface(renderer, surface);
-    SDL_FreeSurface(surface);
-    return texture;
-}
 
 void processEvents()
 {
@@ -422,120 +371,4 @@ void draw()
     }
 
     btnReveal.render();
-}
-
-
-Random::Random()
-{
-    gen.seed(rd());
-}
-
-void Random::setSize(size_t size)
-{
-    distrib.param(uniform_int_distribution<size_t>::param_type(0, size - 1));
-}
-
-int Random::getNumber()
-{
-    return distrib(gen);
-}
-
-void Text::updateTexture()
-{
-    if (texture != nullptr) {
-        SDL_DestroyTexture(texture);
-        texture = nullptr;
-    }
-
-    if (!value.empty()) {
-        auto surface = TTF_RenderText_Blended(font24, value.c_str(), BLACK);
-        texture = SDL_CreateTextureFromSurface(renderer, surface);
-        SDL_FreeSurface(surface);
-    }
-}
-
-void Text::setValue(const string& str)
-{
-    value = str;
-    updateTexture();
-}
-
-void Text::assignValue(int count, char c)
-{
-    value.assign(count, c);
-    updateTexture();
-}
-
-void Text::appendValue(const string& str)
-{
-    value.append(str);
-    updateTexture();
-}
-
-void Text::setAt(int pos, char c)
-{
-    value[pos] = c;
-    updateTexture();
-}
-
-void Text::renderCenterH()
-{
-    if (texture != nullptr)
-    {
-        SDL_Rect r;
-        SDL_QueryTexture(texture, nullptr, nullptr, &r.w, &r.h);
-        r.y = position.y;
-        r.x = (WINDOW_SIZE.x - r.w) / 2;
-        SDL_RenderCopy(renderer, texture, nullptr, &r);
-    }
-}
-
-void Text::render()
-{
-    if (texture != nullptr) {
-        SDL_Rect r;
-        SDL_QueryTexture(texture, nullptr, nullptr, &r.w, &r.h);
-        r.x = position.x;
-        r.y = position.y;
-        SDL_RenderCopy(renderer, texture, nullptr, &r);
-    }
-}
-
-void Button::render()
-{
-    SDL_Rect buttonRect = { position.x, position.y, size.x, size.y };
-    SDL_SetRenderDrawColor(renderer, backgroundColor.r, backgroundColor.g, backgroundColor.b, backgroundColor.a);
-    SDL_RenderFillRect(renderer, &buttonRect);
-
-    SDL_Rect textRect;
-    TTF_SizeText(font24, text.value.c_str(), &textRect.w, &textRect.h);
-    textRect.x = position.x + (size.x - textRect.w) / 2;
-    textRect.y = position.y + (size.y - textRect.h) / 2;
-
-    SDL_RenderCopy(renderer, text.texture, nullptr, &textRect);
-
-}
-
-void SpriteSheet::render()
-{
-    SDL_Rect srcRect;
-    srcRect.x = frames[currentFrame].x * gridSize.x;
-    srcRect.y = frames[currentFrame].y * gridSize.y;
-    srcRect.w = gridSize.x;
-    srcRect.h = gridSize.y;
-
-    SDL_Rect dstRect;
-    dstRect.x = position.x;
-    dstRect.y = position.y;
-    dstRect.w = ghost.scaledSize.x;
-    dstRect.h = ghost.scaledSize.y;
-
-    SDL_RenderCopy(renderer, texture, &srcRect, &dstRect);
-}
-
-void SpriteSheet::load(Vec2i gridSize)
-{
-    texture = loadTexture("assets/ghost/ghost.png");
-    SDL_QueryTexture(texture, nullptr, nullptr, &this->size.x, &this->size.y);
-    this->gridSize = gridSize;
 }
