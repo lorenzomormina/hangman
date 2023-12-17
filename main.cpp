@@ -20,7 +20,7 @@ const SDL_Color BLACK{ 0, 0, 0,255 };
 const SDL_Color WHITE{ 255, 255, 255,255 };
 const SDL_Color WINDOW_COLOR{ 230, 230, 230 };
 const SDL_Color BUTTON_COLOR{ 198, 140, 83,255 };
-const Vec2i BUTTON_SIZE{ 140, 40 };
+const Vec2i BUTTON_SIZE{ 160, 35 };
 const Vec2i WINDOW_SIZE{ 800,600 };
 
 const Vec2i GHOST_SIZE{ 48, 64 };
@@ -44,12 +44,13 @@ Text label_wrongLetters;
 Text label_currentLetter;
 
 Button btnReveal;
+Button btnAnalysis;
 
 SDL_Texture* human[6];
 Vec2i humanPosition;
 SpriteSheet ghost;
 TTF_Font* font24;
-TTF_Font* font14;
+TTF_Font* font18;
 SDL_TimerID ghostTimer;
 
 bool running = true;
@@ -108,7 +109,7 @@ int main(int argc, char** argv)
 void buildAssets()
 {
     font24 = TTF_OpenFont("assets/RobotoMono-Regular.ttf", 24);
-    font14 = TTF_OpenFont("assets/RobotoMono-Regular.ttf", 14);
+    font18 = TTF_OpenFont("assets/RobotoMono-Regular.ttf", 18);
 
     loadWordList();
 
@@ -148,15 +149,8 @@ void buildAssets()
         return interval;
         }, &ghost);
 
-    btnReveal.renderer = renderer;
-    btnReveal.position = { 20, 20 };
-    btnReveal.size = BUTTON_SIZE;
-    btnReveal.color = BUTTON_COLOR;
-    btnReveal.text.color = BLACK;
-    btnReveal.text.renderer = renderer;
-    btnReveal.text.color = BLACK;
-    btnReveal.text.parentRect = { 20,20,BUTTON_SIZE.x, BUTTON_SIZE.y };
-    btnReveal.text.font = font24;
+    btnReveal.init(BUTTON_SIZE, { 20,20 }, BUTTON_COLOR, font18, BLACK, renderer);
+    btnAnalysis.init("Analysis [+]", BUTTON_SIZE, {20,70}, BUTTON_COLOR, font18, BLACK, renderer);
 }
 
 void loadWordList()
@@ -347,4 +341,5 @@ void draw()
     }
 
     btnReveal.render();
+    btnAnalysis.render();
 }

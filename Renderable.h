@@ -40,10 +40,28 @@ struct Button : Renderable
 {
     Vec2i position;
     Vec2i size;
-    SDL_Color color;
     Text text;
-    SDL_Color backgroundColor;
+    SDL_Color color;
     SDL_Color textColor;
+
+    void init(Vec2i size, Vec2i position, SDL_Color color, TTF_Font* font, SDL_Color textColor, SDL_Renderer* renderer)
+    {
+        this->renderer = renderer;
+        this->size = size;
+        this->position = position;
+        this->color = color;
+        this->text.init(renderer, font, textColor, position, { position.x, position.y, size.x, size.y });
+    }
+
+    void init(const std::string& text, Vec2i size, Vec2i position, SDL_Color color, TTF_Font* font, SDL_Color textColor, SDL_Renderer* renderer)
+    {
+        this->renderer = renderer;
+        this->size = size;
+        this->position = position;
+        this->color = color;
+        this->text.init(renderer, font, textColor, position, { position.x, position.y, size.x, size.y });
+        this->text.setValue(text);
+    }
 
     void render();
 };
