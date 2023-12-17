@@ -22,6 +22,8 @@ struct Text : Renderable
     Vec2i position;
     SDL_Rect parentRect;
 
+    void init(SDL_Renderer* renderer, TTF_Font* font, SDL_Color color, Vec2i position, SDL_Rect parentRect);
+
     void setValue(const std::string& str);
     void assignValue(int count, char c);
     void appendValue(const std::string& str);
@@ -30,7 +32,7 @@ struct Text : Renderable
     Vec2i getTextureSize();
     void updateTexture();
 
-    void renderCenterH();
+    void align();
     void render();
 };
 
@@ -63,6 +65,15 @@ struct SpriteSheet : Renderable
 SDL_Texture* loadTexture(const char* path, SDL_Renderer* renderer);
 
 // ---
+
+void Text::init(SDL_Renderer* renderer, TTF_Font* font, SDL_Color color, Vec2i position, SDL_Rect parentRect)
+{
+    this->renderer = renderer;
+    this->font = font;
+    this->color = color;
+    this->position = position;
+    this->parentRect = parentRect;
+}
 
 void Text::setValue(const std::string& str)
 {
@@ -98,13 +109,17 @@ Vec2i Text::getTextureSize()
     return Vec2i{ 0, 0 };
 }
 
-void Text::renderCenterH()
+void Text::align()
 {
     if (texture != nullptr)
     {
         auto size = getTextureSize();
-        SDL_Rect r = { (parentRect.w - size.x) / 2, position.y, size.x, size.y };
-        SDL_RenderCopy(renderer, texture, nullptr, &r);
+
+        if (parentRect.w != 0)
+            this->position.x = (parentRect.w - size.x) / 2;
+
+        if (parentRect.h != 0)
+            this->position.y = (parentRect.h - size.y) / 2;
     }
 }
 
@@ -128,6 +143,7 @@ void Text::updateTexture()
         auto surface = TTF_RenderText_Blended(font, value.c_str(), color);
         texture = SDL_CreateTextureFromSurface(renderer, surface);
         SDL_FreeSurface(surface);
+        align();
     }
 }
 

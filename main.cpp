@@ -114,37 +114,13 @@ void buildAssets()
 
     random.setSize(wordList.size());
 
-    auto windowRect = SDL_Rect{ 0, 0, WINDOW_SIZE.x, WINDOW_SIZE.y };
+    auto windowRect = SDL_Rect{ 0, 0, WINDOW_SIZE.x, 0 };
 
-    publicWord.renderer = renderer;
-    publicWord.position = { 0,50 };
-    publicWord.color = BLACK;
-    publicWord.parentRect = windowRect;
-    publicWord.font = font24;
-
-    label_wrongLetters.renderer = renderer;
-    label_wrongLetters.position = { 0,100 };
-    label_wrongLetters.color = BLACK;
-    label_wrongLetters.parentRect = windowRect;
-    label_wrongLetters.font = font24;
-
-    wrongLetters.renderer = renderer;
-    wrongLetters.position = { 0,150 };
-    wrongLetters.color = BLACK;
-    wrongLetters.parentRect = windowRect;
-    wrongLetters.font = font24;
-
-    label_currentLetter.renderer = renderer;
-    label_currentLetter.position = { 0,200 };
-    label_currentLetter.color = BLACK;
-    label_currentLetter.parentRect = windowRect;
-    label_currentLetter.font = font24;
-
-    currentLetter.renderer = renderer;
-    currentLetter.position = { 0,250 };
-    currentLetter.color = BLACK;
-    currentLetter.parentRect = windowRect;
-    currentLetter.font = font24;
+    publicWord.init(renderer, font24, BLACK, { 0, 50 }, windowRect);
+    label_wrongLetters.init(renderer, font24, BLACK, { 0, 100 }, windowRect);
+    wrongLetters.init(renderer, font24, BLACK, { 0, 150 }, windowRect);
+    label_currentLetter.init(renderer, font24, BLACK, { 0, 200 }, windowRect);
+    currentLetter.init(renderer, font24, BLACK, { 0, 250 }, windowRect);
 
     for (int i = 0; i < 6; ++i) {
         string path = "assets/human_" + to_string(i) + ".png";
@@ -159,6 +135,7 @@ void buildAssets()
     Vec2i humanCenter = { humanPosition.x + humanSize.x / 2,  humanPosition.y + humanSize.y / 2 };
 
     ghost.load("assets/ghost/ghost.png", GHOST_SIZE, renderer);
+    ghost.renderer = renderer;
     ghost.scaledSize = { (int)(GHOST_SCALE * ghost.gridSize.x), (int)(GHOST_SCALE * ghost.gridSize.y) };
     ghost.frames = GHOST_FRAMES;
     ghost.duration = GHOST_FRAME_DURATION;
@@ -176,7 +153,6 @@ void buildAssets()
     btnReveal.size = BUTTON_SIZE;
     btnReveal.color = BUTTON_COLOR;
     btnReveal.text.color = BLACK;
-
     btnReveal.text.renderer = renderer;
     btnReveal.text.color = BLACK;
     btnReveal.text.parentRect = { 20,20,BUTTON_SIZE.x, BUTTON_SIZE.y };
@@ -235,7 +211,7 @@ void processEvents()
             auto y = ev.button.y;
 
             if (x >= btnReveal.position.x && x <= btnReveal.position.x + btnReveal.size.x &&
-                y >= btnReveal.position.y && y <= btnReveal.position.y + btnReveal.size.y) 
+                y >= btnReveal.position.y && y <= btnReveal.position.y + btnReveal.size.y)
             {
                 if (!gameOver) {
                     reveal();
@@ -351,11 +327,11 @@ void confirmLetter()
 
 void draw()
 {
-    publicWord.renderCenterH();
-    label_wrongLetters.renderCenterH();
-    wrongLetters.renderCenterH();
-    label_currentLetter.renderCenterH();
-    currentLetter.renderCenterH();
+    publicWord.render();
+    label_wrongLetters.render();
+    wrongLetters.render();
+    label_currentLetter.render();
+    currentLetter.render();
 
     SDL_Rect r;
     SDL_QueryTexture(human[0], nullptr, nullptr, &r.w, &r.h);
