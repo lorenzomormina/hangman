@@ -96,7 +96,6 @@ Text currentLetter;
 Text label_wrongLetters;
 Text label_currentLetter;
 
-Button btnReset;
 Button btnReveal;
 
 SDL_Texture* human[6];
@@ -211,16 +210,6 @@ void buildAssets()
     };
 
     btnReveal.text.setValue("Reveal");
-
-    btnReset = {
-        { 20, 70 },
-        BUTTON_SIZE,
-        { "" },
-        BUTTON_COLOR,
-        BLACK
-    };
-
-    btnReset.text.setValue("Reset");
 }
 
 void loadWordList()
@@ -281,10 +270,12 @@ void processEvents()
                 confirmLetter();
             }
             else if (scancode == SDL_SCANCODE_F2) {
-                reveal();
-            }
-            else if (scancode == SDL_SCANCODE_F3) {
-                resetGame();
+                if (!gameOver) {
+                    reveal();
+                }
+                else {
+                    resetGame();
+                }
             }
             break;
         }
@@ -294,13 +285,15 @@ void processEvents()
             auto x = ev.button.x;
             auto y = ev.button.y;
 
-            if (x >= btnReset.position.x && x <= btnReset.position.x + btnReset.size.x &&
-                y >= btnReset.position.y && y <= btnReset.position.y + btnReset.size.y) {
-                resetGame();
-            }
-            else if (x >= btnReveal.position.x && x <= btnReveal.position.x + btnReveal.size.x &&
-                y >= btnReveal.position.y && y <= btnReveal.position.y + btnReveal.size.y) {
-                reveal();
+            if (x >= btnReveal.position.x && x <= btnReveal.position.x + btnReveal.size.x &&
+                y >= btnReveal.position.y && y <= btnReveal.position.y + btnReveal.size.y) 
+            {
+                if (!gameOver) {
+                    reveal();
+                }
+                else {
+                    resetGame();
+                }
             }
 
             break;
@@ -320,6 +313,7 @@ void reveal()
     didReveal = true;
     gameOver = true;
     label_currentLetter.setValue("You Lose!");
+    btnReveal.text.setValue("Reset");
 }
 
 void resetGame()
@@ -336,6 +330,8 @@ void resetGame()
     label_wrongLetters.setValue("Wrong Letters (0):");
     label_currentLetter.setValue("Current Letter:");
     currentLetter.setValue("");
+
+    btnReveal.text.setValue("Reveal");
 
     // cout << secretWord.value + "\n" << endl;
 }
@@ -392,6 +388,7 @@ void confirmLetter()
             if (publicWord.value == secretWord.value)
             {
                 gameOver = true;
+                btnReveal.text.setValue("Reset");
                 if (wrongLetters.value.size() / 2 > 5)
                     label_currentLetter.setValue("You Lose!");
                 else
@@ -425,7 +422,6 @@ void draw()
     }
 
     btnReveal.render();
-    btnReset.render();
 }
 
 
