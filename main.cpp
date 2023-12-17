@@ -54,6 +54,20 @@ struct Button
     void render();
 };
 
+struct SpriteSheet
+{
+    Vec2i position;
+    Vec2i size;
+    Vec2i gridSize;
+    Vec2i scaledSize;
+    SDL_Texture* texture;
+    vector<Vec2i> frames;
+    int duration;
+    int currentFrame = 0;
+    void load(Vec2i gridSize);
+    void render();
+};
+
 
 const SDL_Color BLACK{ 0, 0, 0,255 };
 const SDL_Color WHITE{ 255, 255, 255,255 };
@@ -61,6 +75,13 @@ const SDL_Color WINDOW_COLOR{ 230, 230, 230 };
 const SDL_Color BUTTON_COLOR{ 198, 140, 83,255 };
 const Vec2i BUTTON_SIZE{ 140, 40 };
 const Vec2i WINDOW_SIZE{ 800,600 };
+
+const Vec2i GHOST_SIZE{ 48, 64 };
+const vector<Vec2i> GHOST_FRAMES = {
+    {0,2}, {1,2}, {2,2},
+};
+const int GHOST_FRAME_DURATION = 500;
+const float GHOST_SCALE = 3.0f;
 
 
 Random random;
@@ -80,12 +101,15 @@ Button btnReveal;
 
 SDL_Texture* human[6];
 Vec2i humanPosition;
+SpriteSheet ghost;
 TTF_Font* font24;
 TTF_Font* font14;
+SDL_TimerID ghostTimer;
 
 bool running = true;
 bool didReveal = false;
 bool gameOver = false;
+bool isGhost = false;
 
 
 void buildAssets();
@@ -158,10 +182,25 @@ void buildAssets()
         human[i] = loadTexture(path.c_str());
     }
 
-    int w;
-    SDL_QueryTexture(human[0], nullptr, nullptr, &w, nullptr);
-    humanPosition.x = (WINDOW_SIZE.x - w) / 2;
+    Vec2i humanSize;
+    SDL_QueryTexture(human[0], nullptr, nullptr, &humanSize.x, &humanSize.y);
+    humanPosition.x = (WINDOW_SIZE.x - humanSize.x) / 2;
     humanPosition.y = 300;
+
+    Vec2i humanCenter = { humanPosition.x + humanSize.x / 2,  humanPosition.y + humanSize.y / 2 };
+
+    ghost.load(GHOST_SIZE);
+    ghost.scaledSize = { (int)(GHOST_SCALE * ghost.gridSize.x), (int)(GHOST_SCALE * ghost.gridSize.y) };
+    ghost.frames = GHOST_FRAMES;
+    ghost.duration = GHOST_FRAME_DURATION;
+    ghost.position = { humanCenter.x - ghost.scaledSize.x / 2, humanCenter.y - ghost.scaledSize.y / 2 };
+    Vec2i ghostCenter = { ghost.position.x + ghost.scaledSize.x / 2, ghost.position.y + ghost.scaledSize.y / 2 };
+
+    SDL_AddTimer(ghost.duration, [](Uint32 interval, void* param) {
+        auto ghost = (SpriteSheet*)param;
+        ghost->currentFrame = (ghost->currentFrame + 1) % ghost->frames.size();
+        return interval;
+        }, &ghost);
 
     btnReveal = {
         { 20, 20 },
@@ -287,6 +326,7 @@ void resetGame()
 {
     gameOver = false;
     didReveal = false;
+    isGhost = false;
 
     auto idx = random.getNumber();
     secretWord.setValue(wordList[idx]);
@@ -304,6 +344,9 @@ void prepareLetter(int scancode)
 {
     if (gameOver)
         return;
+
+    if (wrongLetters.value.size() / 2 == 5)
+        isGhost = true;
 
     char c = 'A' + (scancode - SDL_SCANCODE_A);
     string letter;
@@ -346,10 +389,10 @@ void confirmLetter()
         {
             found = true;
             publicWord.setAt(pos, letter[0]);
-            if (publicWord.value == secretWord.value) 
+            if (publicWord.value == secretWord.value)
             {
                 gameOver = true;
-                if (wrongLetters.value.size() / 2 > 5) 
+                if (wrongLetters.value.size() / 2 > 5)
                     label_currentLetter.setValue("You Lose!");
                 else
                     label_currentLetter.setValue("You Win!");
@@ -358,6 +401,31 @@ void confirmLetter()
     }
 
     currentLetter.setValue("");
+}
+
+void draw()
+{
+    publicWord.renderCenterH();
+    label_wrongLetters.renderCenterH();
+    wrongLetters.renderCenterH();
+    label_currentLetter.renderCenterH();
+    currentLetter.renderCenterH();
+
+    SDL_Rect r;
+    SDL_QueryTexture(human[0], nullptr, nullptr, &r.w, &r.h);
+    r.x = humanPosition.x;
+    r.y = humanPosition.y;
+
+    if (isGhost) {
+        ghost.render();
+    }
+    else {
+        int humanIndex = didReveal ? 5 : wrongLetters.value.size() / 2;
+        SDL_RenderCopy(renderer, human[humanIndex], nullptr, &r);
+    }
+
+    btnReveal.render();
+    btnReset.render();
 }
 
 
@@ -410,7 +478,7 @@ void Text::appendValue(const string& str)
 
 void Text::setAt(int pos, char c)
 {
-    value[pos] = c; 
+    value[pos] = c;
     updateTexture();
 }
 
@@ -452,29 +520,26 @@ void Button::render()
 
 }
 
-void draw()
+void SpriteSheet::render()
 {
-    publicWord.renderCenterH();
-    label_wrongLetters.renderCenterH();
-    wrongLetters.renderCenterH();
-    label_currentLetter.renderCenterH();
-    currentLetter.renderCenterH();
+    SDL_Rect srcRect;
+    srcRect.x = frames[currentFrame].x * gridSize.x;
+    srcRect.y = frames[currentFrame].y * gridSize.y;
+    srcRect.w = gridSize.x;
+    srcRect.h = gridSize.y;
 
-    SDL_Rect r;
-    SDL_QueryTexture(human[0], nullptr, nullptr, &r.w, &r.h);
-    r.x = humanPosition.x;
-    r.y = humanPosition.y;
+    SDL_Rect dstRect;
+    dstRect.x = position.x;
+    dstRect.y = position.y;
+    dstRect.w = ghost.scaledSize.x;
+    dstRect.h = ghost.scaledSize.y;
 
-    int humanIndex;
-    if (didReveal) {
-        humanIndex = 5;
-    }
-    else {
-        humanIndex = wrongLetters.value.size() / 2 > 5 ? 5 : wrongLetters.value.size() / 2;
-    }
+    SDL_RenderCopy(renderer, texture, &srcRect, &dstRect);
+}
 
-    SDL_RenderCopy(renderer, human[humanIndex], nullptr, &r);
-
-    btnReveal.render();
-    btnReset.render();
+void SpriteSheet::load(Vec2i gridSize)
+{
+    texture = loadTexture("assets/ghost/ghost.png");
+    SDL_QueryTexture(texture, nullptr, nullptr, &this->size.x, &this->size.y);
+    this->gridSize = gridSize;
 }
