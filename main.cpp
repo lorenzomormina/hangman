@@ -96,7 +96,9 @@ void resetGame();
 
 void draw();
 
-void updateWordsCompatible(vector<string>& wordList, const string& secretWord, const string& wrongLetters);
+void updateWordsCompatibleCorrect(vector<string>& compList, const string& letter, const string& secretWord);
+void updateWordsCompatibleWrong(vector<string>& compList, const string& letter);
+//void updateWordsCompatible(vector<string>& compList, const string& secretWord, const string& wrongLetters);
 
 
 int main(int argc, char** argv)
@@ -318,12 +320,18 @@ void resetGame()
 
     wordLengthList.clear();
     std::copy_if(wordList.begin(), wordList.end(), std::back_inserter(wordLengthList), [](string word) {return word.size() == secretWord.value.size(); });
+    wordComptibleList = wordLengthList;
     count_wordsLength.setValue(to_string(wordLengthList.size()));
     count_wordsCompatible.setValue(to_string(wordLengthList.size()));
 
     human.currentIndex = 0;
 
-    // cout << secretWord.value + "\n" << endl;
+    // debug
+    cout << secretWord.value + "\n\n";
+    for (auto& w : wordComptibleList) {
+        cout << w << "\n";
+    }
+    cout << "\n";
 }
 
 void prepareLetter(int scancode)
@@ -370,7 +378,7 @@ void confirmLetter()
                     if (human.currentIndex < human.maxIndex) {
                         human.currentIndex++;
                     }
-                    updateWordsCompatible(wordComptibleList, secretWord.value, wrongLetters.value);
+                    updateWordsCompatibleWrong(wordComptibleList, letter);
                 }
             }
             break;
@@ -388,14 +396,14 @@ void confirmLetter()
                 else
                     label_currentLetter.setValue("You Win!");
             }
-            updateWordsCompatible(wordComptibleList, secretWord.value, wrongLetters.value);
+            updateWordsCompatibleCorrect(wordComptibleList, letter, secretWord.value);
         }
     }
 
     currentLetter.setValue("");
 
     // debug
-    for (auto w : wordComptibleList) {
+    for (auto& w : wordComptibleList) {
         cout << w << endl;
     }
     cout << endl;
@@ -436,18 +444,61 @@ void draw()
     btnAnalysis.render();
 }
 
-void updateWordsCompatible(vector<string>& wordList, const string& secretWord, const string& wrongLetters)
+//void updateWordsCompatible(vector<string>& compList, const string& secretWord, const string& wrongLetters)
+//{
+//    std::remove_if(compList.begin(), compList.end(), [secretWord, wrongLetters](string word) {
+//        
+//
+//
+//        });
+//    count_wordsCompatible.setValue(to_string(compList.size()));
+//}
+
+void updateWordsCompatibleCorrect(vector<string>& compList, const string& letter, const string& secretWord)
 {
-    std::remove_if(wordList.begin(), wordList.end(), [secretWord, wrongLetters](string word) {
-        for (auto c : wrongLetters) {
-            if (word.find(c) != string::npos)
-                return true;
+    auto rem = std::remove_if(compList.begin(), compList.end(), [letter, secretWord](string word) {
+        // get positions of letter in word
+        vector<int> positions;
+        auto pos = -1;
+        while (true)
+        {
+            pos = word.find(letter, pos + 1);
+            if (pos == string::npos)
+                break;
+            else
+                positions.push_back(pos);
         }
-        for (auto c : secretWord) {
-            if (word.find(c) == string::npos)
-                return true;
+
+        // get positions of letter in secret word
+        vector<int> secretPositions;
+        pos = -1;
+        while (true)
+        {
+            pos = secretWord.find(letter, pos + 1);
+            if (pos == string::npos)
+                break;
+            else
+                secretPositions.push_back(pos);
         }
-        return false;
+
+        // if positions are not equal, remove word
+        if (positions != secretPositions)
+            return true;
+        else
+            return false;
         });
-    count_wordsCompatible.setValue(to_string(wordList.size()));
+    compList.erase(rem, compList.end());
+    count_wordsCompatible.setValue(to_string(compList.size()));
+}
+
+void updateWordsCompatibleWrong(vector<string>& compList, const string& letter)
+{
+    auto rem = std::remove_if(compList.begin(), compList.end(), [letter](string word) {
+        if (word.find(letter) != string::npos)
+            return true;
+        else
+            return false;
+        });
+    compList.erase(rem, compList.end());
+    count_wordsCompatible.setValue(to_string(compList.size()));
 }
