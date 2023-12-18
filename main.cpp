@@ -98,7 +98,6 @@ void draw();
 
 void updateWordsCompatibleCorrect(vector<string>& compList, const string& letter, const string& secretWord);
 void updateWordsCompatibleWrong(vector<string>& compList, const string& letter);
-//void updateWordsCompatible(vector<string>& compList, const string& secretWord, const string& wrongLetters);
 
 
 int main(int argc, char** argv)
@@ -255,7 +254,7 @@ void processEvents()
             auto x = ev.button.x;
             auto y = ev.button.y;
 
-            if (btnReveal.contains(x, y))
+            if (btnReveal.containsPoint(x, y))
             {
                 if (!gameOver) {
                     reveal();
@@ -264,7 +263,7 @@ void processEvents()
                     resetGame();
                 }
             }
-            else if (btnAnalysis.contains(x, y))
+            else if (btnAnalysis.containsPoint(x, y))
             {
                 if (isAnalysisOpen) {
                     isAnalysisOpen = false;
@@ -330,10 +329,10 @@ void resetGame()
 
     // debug
     cout << secretWord.value + "\n\n";
-    for (auto& w : wordComptibleList) {
-        cout << w << "\n";
-    }
-    cout << "\n";
+    //for (auto& w : wordComptibleList) {
+    //    cout << w << "\n";
+    //}
+    //cout << "\n";
 }
 
 void prepareLetter(int scancode)
@@ -405,10 +404,10 @@ void confirmLetter()
     currentLetter.setValue("");
 
     // debug
-    for (auto& w : wordComptibleList) {
-        cout << w << endl;
-    }
-    cout << endl;
+    //for (auto& w : wordComptibleList) {
+    //    cout << w << endl;
+    //}
+    //cout << endl;
 }
 
 void draw()
@@ -445,16 +444,6 @@ void draw()
     btnReveal.render();
     btnAnalysis.render();
 }
-
-//void updateWordsCompatible(vector<string>& compList, const string& secretWord, const string& wrongLetters)
-//{
-//    std::remove_if(compList.begin(), compList.end(), [secretWord, wrongLetters](string word) {
-//        
-//
-//
-//        });
-//    count_wordsCompatible.setValue(to_string(compList.size()));
-//}
 
 void updateWordsCompatibleCorrect(vector<string>& compList, const string& letter, const string& secretWord)
 {

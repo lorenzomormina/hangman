@@ -9,8 +9,42 @@
 
 struct Renderable
 {
+    Vec2i position;
+    Vec2i size;
+    SDL_Rect parentRect;
+    SDL_Texture* texture;
     SDL_Renderer* renderer;
-    virtual void render() = 0;
+
+    SDL_Rect rect()
+    {
+        return { position.x, position.y, size.x, size.y };
+    }
+
+    virtual void render()
+    {
+        SDL_RenderCopy(renderer, texture, nullptr, &rect());
+    }
+
+    void _alignCenter()
+    {
+        if (parentRect.w != 0)
+            this->position.x += (parentRect.w - size.x) / 2;
+
+        if (parentRect.h != 0)
+            this->position.y += (parentRect.h - size.y) / 2;
+    }
+
+    bool containsPoint(Vec2i point)
+    {
+        return point.x >= position.x && point.x <= position.x + size.x &&
+            point.y >= position.y && point.y <= position.y + size.y;
+    }
+
+    bool containsPoint(int x, int y)
+    {
+        return x >= position.x && x <= position.x + size.x &&
+            y >= position.y && y <= position.y + size.y;
+    }
 };
 
 struct Text : Renderable
@@ -18,9 +52,6 @@ struct Text : Renderable
     TTF_Font* font;
     SDL_Color color;
     std::string value;
-    SDL_Texture* texture = nullptr;
-    Vec2i position;
-    SDL_Rect parentRect;
 
     void init(SDL_Renderer* renderer, TTF_Font* font, SDL_Color color, Vec2i position, SDL_Rect parentRect);
 
@@ -49,8 +80,6 @@ struct Text : Renderable
 
 struct Button : Renderable
 {
-    Vec2i position;
-    Vec2i size;
     Text text;
     SDL_Color color;
     SDL_Color textColor;
@@ -72,18 +101,6 @@ struct Button : Renderable
         this->color = color;
         this->text.init(renderer, font, textColor, position, { position.x, position.y, size.x, size.y });
         this->text.setValue(text);
-    }
-
-    bool contains(Vec2i point)
-    {
-        return point.x >= position.x && point.x <= position.x + size.x &&
-            point.y >= position.y && point.y <= position.y + size.y;
-    }
-
-    bool contains(int x, int y)
-    {
-        return x >= position.x && x <= position.x + size.x &&
-            y >= position.y && y <= position.y + size.y;
     }
 
     void render();
