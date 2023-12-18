@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../Renderable.h"
+#include "Renderable.h"
 
 struct SpriteSheet :Renderable
 {

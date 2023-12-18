@@ -13,6 +13,7 @@
 #include "Random.h"
 #include "Renderable.h"
 #include "String.h"
+#include "Renderable/Text.h"
 #include "Renderable/SpriteSheet.h"
 
 using namespace std;
