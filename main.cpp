@@ -22,6 +22,8 @@ const SDL_Color WHITE{ 255, 255, 255,255 };
 const SDL_Color WINDOW_COLOR{ 230, 230, 230 };
 const SDL_Color BUTTON_COLOR{ 198, 140, 83,255 };
 const Vec2i BUTTON_SIZE{ 160, 35 };
+const Vec2i BTN_LOOK_SIZE{ 50, 20 };
+const Vec2i BTN_LETTERS_SIZE{ 70, 20 };
 const Vec2i WINDOW_SIZE{ 800,600 };
 
 const Vec2i GHOST_SIZE{ 48, 64 };
@@ -37,6 +39,8 @@ SDL_Window* window;
 SDL_Renderer* renderer;
 
 vector<string> wordList;
+vector<string> wordLengthList;
+vector<string> wordComptibleList;
 Text secretWord;
 Text publicWord;
 Text wrongLetters;
@@ -44,20 +48,39 @@ Text currentLetter;
 Text label_wrongLetters;
 Text label_currentLetter;
 
+Text label_wordsDictionary;
+Text label_wordsLength;
+Text label_wordsCompatible;
+
+Text count_wordsDictionary;
+Text count_wordsLength;
+Text count_wordsCompatible;
+
 Button btnReveal;
 Button btnAnalysis;
+
+Button btnLook_1;
+Button btnLetters_1;
+
+Button btnLook_2;
+Button btnLetters_2;
+
+Button btnLook_3;
+Button btnLetters_3;
 
 SpriteSheet human;
 Vec2i humanPosition;
 AnimatedSprite ghost;
 TTF_Font* font24;
 TTF_Font* font18;
+TTF_Font* font12;
 SDL_TimerID ghostTimer;
 
 bool running = true;
 bool didReveal = false;
 bool gameOver = false;
 bool isGhost = false;
+bool isAnalysisOpen = true;
 
 
 void buildAssets();
@@ -72,6 +95,8 @@ void reveal();
 void resetGame();
 
 void draw();
+
+void updateWordsCompatible(vector<string>& wordList, const string& secretWord, const string& wrongLetters);
 
 
 int main(int argc, char** argv)
@@ -111,6 +136,7 @@ void buildAssets()
 {
     font24 = TTF_OpenFont("assets/RobotoMono-Regular.ttf", 24);
     font18 = TTF_OpenFont("assets/RobotoMono-Regular.ttf", 18);
+    font12 = TTF_OpenFont("assets/RobotoMono-Regular.ttf", 12);
 
     loadWordList();
 
@@ -123,6 +149,24 @@ void buildAssets()
     wrongLetters.init(renderer, font24, BLACK, { 0, 150 }, windowRect);
     label_currentLetter.init(renderer, font24, BLACK, { 0, 200 }, windowRect);
     currentLetter.init(renderer, font24, BLACK, { 0, 250 }, windowRect);
+
+    label_wordsDictionary.init(renderer, "All words in dictionary", font12, BLACK, { 20, 150 });
+    count_wordsDictionary.init(renderer, to_string(wordList.size()), font12, BLACK, { 20, 170 });
+
+    label_wordsLength.init(renderer, "Words of length {}", font12, BLACK, { 20, 200 });
+    count_wordsLength.init(renderer, to_string(wordLengthList.size()), font12, BLACK, { 20, 220 });
+
+    label_wordsCompatible.init(renderer, "Words compatible", font12, BLACK, { 20, 250 });
+    count_wordsCompatible.init(renderer, to_string(wordComptibleList.size()), font12, BLACK, { 20, 270 });
+
+    btnLook_1.init("Look", BTN_LOOK_SIZE, { 65, 170 }, BUTTON_COLOR, font12, BLACK, renderer);
+    btnLetters_1.init("Letters", BTN_LETTERS_SIZE, { 65 + BTN_LOOK_SIZE.x + 15, 170 }, BUTTON_COLOR, font12, BLACK, renderer);
+
+    btnLook_2.init("Look", BTN_LOOK_SIZE, { 65, 220 }, BUTTON_COLOR, font12, BLACK, renderer);
+    btnLetters_2.init("Letters", BTN_LETTERS_SIZE, { 65 + BTN_LOOK_SIZE.x + 15, 220 }, BUTTON_COLOR, font12, BLACK, renderer);
+
+    btnLook_3.init("Look", BTN_LOOK_SIZE, { 65, 270 }, BUTTON_COLOR, font12, BLACK, renderer);
+    btnLetters_3.init("Letters", BTN_LETTERS_SIZE, { 65 + BTN_LOOK_SIZE.x + 15, 270 }, BUTTON_COLOR, font12, BLACK, renderer);
 
     human.load("assets/human.png", { 0,300 }, { 100,200 }, { 0, 0, WINDOW_SIZE.x, 0 }, renderer);
     human.currentIndex = 0;
@@ -189,6 +233,16 @@ void processEvents()
                     resetGame();
                 }
             }
+            else if (scancode == SDL_SCANCODE_F3) {
+                if (isAnalysisOpen) {
+                    isAnalysisOpen = false;
+                    btnAnalysis.text.setValue("Analysis [+]");
+                }
+                else {
+                    isAnalysisOpen = true;
+                    btnAnalysis.text.setValue("Analysis [-]");
+                }
+            }
             break;
         }
 
@@ -197,14 +251,24 @@ void processEvents()
             auto x = ev.button.x;
             auto y = ev.button.y;
 
-            if (x >= btnReveal.position.x && x <= btnReveal.position.x + btnReveal.size.x &&
-                y >= btnReveal.position.y && y <= btnReveal.position.y + btnReveal.size.y)
+            if (btnReveal.contains(x, y))
             {
                 if (!gameOver) {
                     reveal();
                 }
                 else {
                     resetGame();
+                }
+            }
+            else if (btnAnalysis.contains(x, y))
+            {
+                if (isAnalysisOpen) {
+                    isAnalysisOpen = false;
+                    btnAnalysis.text.setValue("Analysis [+]");
+                }
+                else {
+                    isAnalysisOpen = true;
+                    btnAnalysis.text.setValue("Analysis [-]");
                 }
             }
 
@@ -247,7 +311,15 @@ void resetGame()
     label_currentLetter.setValue("Current Letter:");
     currentLetter.setValue("");
 
+    label_wordsLength.setValue("Words of length " + to_string(secretWord.value.size()));
+
     btnReveal.text.setValue("Reveal");
+
+
+    wordLengthList.clear();
+    std::copy_if(wordList.begin(), wordList.end(), std::back_inserter(wordLengthList), [](string word) {return word.size() == secretWord.value.size(); });
+    count_wordsLength.setValue(to_string(wordLengthList.size()));
+    count_wordsCompatible.setValue(to_string(wordLengthList.size()));
 
     human.currentIndex = 0;
 
@@ -298,6 +370,7 @@ void confirmLetter()
                     if (human.currentIndex < human.maxIndex) {
                         human.currentIndex++;
                     }
+                    updateWordsCompatible(wordComptibleList, secretWord.value, wrongLetters.value);
                 }
             }
             break;
@@ -315,10 +388,17 @@ void confirmLetter()
                 else
                     label_currentLetter.setValue("You Win!");
             }
+            updateWordsCompatible(wordComptibleList, secretWord.value, wrongLetters.value);
         }
     }
 
     currentLetter.setValue("");
+
+    // debug
+    for (auto w : wordComptibleList) {
+        cout << w << endl;
+    }
+    cout << endl;
 }
 
 void draw()
@@ -329,6 +409,21 @@ void draw()
     label_currentLetter.render();
     currentLetter.render();
 
+    if (isAnalysisOpen) {
+        label_wordsDictionary.render();
+        count_wordsDictionary.render();
+        label_wordsLength.render();
+        count_wordsLength.render();
+        label_wordsCompatible.render();
+        count_wordsCompatible.render();
+
+        btnLook_1.render();
+        btnLetters_1.render();
+        btnLook_2.render();
+        btnLetters_2.render();
+        btnLook_3.render();
+        btnLetters_3.render();
+    }
 
     if (isGhost) {
         ghost.render();
@@ -339,4 +434,20 @@ void draw()
 
     btnReveal.render();
     btnAnalysis.render();
+}
+
+void updateWordsCompatible(vector<string>& wordList, const string& secretWord, const string& wrongLetters)
+{
+    std::remove_if(wordList.begin(), wordList.end(), [secretWord, wrongLetters](string word) {
+        for (auto c : wrongLetters) {
+            if (word.find(c) != string::npos)
+                return true;
+        }
+        for (auto c : secretWord) {
+            if (word.find(c) == string::npos)
+                return true;
+        }
+        return false;
+        });
+    count_wordsCompatible.setValue(to_string(wordList.size()));
 }

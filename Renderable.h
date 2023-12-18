@@ -24,6 +24,17 @@ struct Text : Renderable
 
     void init(SDL_Renderer* renderer, TTF_Font* font, SDL_Color color, Vec2i position, SDL_Rect parentRect);
 
+    void init(SDL_Renderer* renderer, const std::string& text, TTF_Font* font, SDL_Color color, Vec2i position)
+    {
+        this->renderer = renderer;
+        this->font = font;
+        this->color = color;
+        this->position = position;
+        parentRect = { 0, 0, 0, 0 };
+        setValue(text);
+        updateTexture();
+    }
+
     void setValue(const std::string& str);
     void assignValue(int count, char c);
     void appendValue(const std::string& str);
@@ -61,6 +72,18 @@ struct Button : Renderable
         this->color = color;
         this->text.init(renderer, font, textColor, position, { position.x, position.y, size.x, size.y });
         this->text.setValue(text);
+    }
+
+    bool contains(Vec2i point)
+    {
+        return point.x >= position.x && point.x <= position.x + size.x &&
+            point.y >= position.y && point.y <= position.y + size.y;
+    }
+
+    bool contains(int x, int y)
+    {
+        return x >= position.x && x <= position.x + size.x &&
+            y >= position.y && y <= position.y + size.y;
     }
 
     void render();
