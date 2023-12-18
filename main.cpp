@@ -204,6 +204,8 @@ void loadWordList()
         toUpper(line);
         wordList.push_back(line);
     }
+
+    std::sort(wordList.begin(), wordList.end());
 }
 
 
