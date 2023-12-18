@@ -66,7 +66,7 @@ struct Button : Renderable
     void render();
 };
 
-struct SpriteSheet : Renderable
+struct AnimatedSprite : Renderable
 {
     Vec2i position;
     Vec2i size;
@@ -81,6 +81,17 @@ struct SpriteSheet : Renderable
 };
 
 SDL_Texture* loadTexture(const char* path, SDL_Renderer* renderer);
+
+SDL_Texture* loadTexture(const char* path, SDL_Renderer* renderer, Vec2i* size)
+{
+    auto surface = IMG_Load(path);
+    auto texture = SDL_CreateTextureFromSurface(renderer, surface);
+    SDL_FreeSurface(surface);
+
+    SDL_QueryTexture(texture, nullptr, nullptr, &(size->x), &(size->y));
+
+    return texture;
+}
 
 // ---
 
@@ -180,7 +191,7 @@ void Button::render()
 
 }
 
-void SpriteSheet::render()
+void AnimatedSprite::render()
 {
     SDL_Rect srcRect;
     srcRect.x = frames[currentFrame].x * gridSize.x;
@@ -197,7 +208,7 @@ void SpriteSheet::render()
     SDL_RenderCopy(renderer, texture, &srcRect, &dstRect);
 }
 
-void SpriteSheet::load(const char* path, Vec2i gridSize, SDL_Renderer* renderer)
+void AnimatedSprite::load(const char* path, Vec2i gridSize, SDL_Renderer* renderer)
 {
     texture = loadTexture(path, renderer);
     SDL_QueryTexture(texture, nullptr, nullptr, &this->size.x, &this->size.y);
