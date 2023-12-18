@@ -7,7 +7,7 @@ add_executable(
     main 
     #WIN32
     main.cpp
- "Vec2.h" "Random.h" "Renderable.h" "String.h"  "Renderable/SpriteSheet.h" "Renderable/Renderable.h" "Renderable/Text.h" "Renderable/Button.h" "Renderable/Rectangle.h" "Renderable/AnimatedSprite.h")
+ "Vec2.h" "Random.h"  "String.h"  "Renderable/SpriteSheet.h" "Renderable/Renderable.h" "Renderable/Text.h" "Renderable/Button.h" "Renderable/Rectangle.h" "Renderable/AnimatedSprite.h")
 
 find_package(SDL2 CONFIG REQUIRED)
 find_package(SDL2_ttf CONFIG REQUIRED)

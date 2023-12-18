@@ -1,7 +1,25 @@
 #pragma once
 
 #include <SDL2/SDL.h>
+#include <SDL2/SDL_image.h>
 #include "../Vec2.h"
+
+SDL_Texture* loadTexture(const char* path, SDL_Renderer* renderer, Vec2i* size)
+{
+    auto surface = IMG_Load(path);
+    auto texture = SDL_CreateTextureFromSurface(renderer, surface);
+    SDL_FreeSurface(surface);
+    SDL_QueryTexture(texture, nullptr, nullptr, &(size->x), &(size->y));
+    return texture;
+}
+
+SDL_Texture* loadTexture(const char* path, SDL_Renderer* renderer)
+{
+    auto surface = IMG_Load(path);
+    auto texture = SDL_CreateTextureFromSurface(renderer, surface);
+    SDL_FreeSurface(surface);
+    return texture;
+}
 
 struct Renderable
 {
