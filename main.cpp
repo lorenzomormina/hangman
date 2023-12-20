@@ -82,7 +82,7 @@ bool running = true;
 bool didReveal = false;
 bool gameOver = false;
 bool isGhost = false;
-bool isAnalysisOpen = true;
+bool isAnalysisOpen = false;
 
 
 void buildAssets();
@@ -330,7 +330,7 @@ void resetGame()
     human.currentIndex = 0;
 
     // debug
-    cout << secretWord.value + "\n\n";
+    //cout << secretWord.value + "\n\n";
     //for (auto& w : wordComptibleList) {
     //    cout << w << "\n";
     //}
@@ -428,12 +428,12 @@ void draw()
         label_wordsCompatible.render();
         count_wordsCompatible.render();
 
-        btnLook_1.render();
-        btnLetters_1.render();
-        btnLook_2.render();
-        btnLetters_2.render();
-        btnLook_3.render();
-        btnLetters_3.render();
+        //btnLook_1.render();
+        //btnLetters_1.render();
+        //btnLook_2.render();
+        //btnLetters_2.render();
+        //btnLook_3.render();
+        //btnLetters_3.render();
     }
 
     if (isGhost) {
